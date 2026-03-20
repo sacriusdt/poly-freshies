@@ -93,6 +93,24 @@ def log(message: str) -> None:
     print(message, file=sys.stderr)
 
 
+def load_dotenv(path: str = ".env") -> None:
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            for raw in handle:
+                line = raw.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                if key and key not in os.environ:
+                    os.environ[key] = value
+    except OSError as exc:
+        log(f"Failed to read .env: {exc}")
+
+
 def parse_float(value: str) -> Optional[float]:
     try:
         return float(value)
@@ -404,6 +422,7 @@ def run() -> None:
     parser.add_argument("--telegram-admin-id", type=str, help="Telegram admin user id.")
 
     args = parser.parse_args()
+    load_dotenv()
     settings = build_settings(args)
 
     if settings.telegram_enabled and (not settings.telegram_token or not settings.telegram_chat_id):

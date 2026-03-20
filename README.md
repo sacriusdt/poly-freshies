@@ -53,6 +53,8 @@ You can also use environment variables:
 
 - `POLY_MIN_SIZE`
 - `POLY_MAX_PREDICTIONS`
+  
+You can put all env vars in a `.env` file, it will be loaded automatically.
 
 ## Run with Telegram
 
