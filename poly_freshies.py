@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import sys
 import threading
@@ -12,6 +13,7 @@ import requests
 TRADES_URL = "https://data-api.polymarket.com/trades"
 TRADED_URL = "https://data-api.polymarket.com/traded"
 MARKET_URL = "https://gamma-api.polymarket.com/events/slug/{slug}"
+STATE_FILE = ".poly_freshies_state.json"
 
 EVENT_LINK = "https://polymarket.com/event/{slug}"
 USER_LINK = "https://polymarket.com/@{name}"
@@ -206,6 +208,34 @@ def start_cli_listener(settings: Settings) -> None:
     thread.start()
 
 
+def load_seen_state(max_seen: int) -> deque:
+    seen_queue: deque[str] = deque()
+    if not os.path.exists(STATE_FILE):
+        return seen_queue
+    try:
+        with open(STATE_FILE, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        items = data.get("seen") if isinstance(data, dict) else None
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, str):
+                    seen_queue.append(item)
+        while len(seen_queue) > max_seen:
+            seen_queue.popleft()
+    except (OSError, json.JSONDecodeError) as exc:
+        log(f"State load failed: {exc}")
+    return seen_queue
+
+
+def save_seen_state(seen_queue: deque) -> None:
+    try:
+        payload = {"seen": list(seen_queue)}
+        with open(STATE_FILE, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle)
+    except OSError as exc:
+        log(f"State save failed: {exc}")
+
+
 def escape_md(text: str) -> str:
     return text.replace("[", "(").replace("]", ")")
 
@@ -390,9 +420,10 @@ def run() -> None:
     event_counts: Dict[str, int] = defaultdict(int)
     user_counts: Dict[str, int] = defaultdict(int)
 
-    seen_set: Set[str] = set()
-    seen_queue: deque[str] = deque()
     max_seen = 5000
+    seen_queue = load_seen_state(max_seen)
+    seen_set: Set[str] = set(seen_queue)
+    pending_state_save = False
 
     last_poll = 0.0
     log("Poly Freshies is running.")
@@ -412,6 +443,7 @@ def run() -> None:
                 if len(seen_queue) > max_seen:
                     old = seen_queue.popleft()
                     seen_set.discard(old)
+                pending_state_save = True
 
                 price = float(trade.get("price") or 0)
                 if price > settings.max_price:
@@ -454,6 +486,10 @@ def run() -> None:
                 print(message)
                 if telegram_client:
                     telegram_client.send(message)
+
+            if pending_state_save:
+                save_seen_state(seen_queue)
+                pending_state_save = False
 
         if telegram_client:
             telegram_client.handle_updates(settings)

@@ -81,4 +81,4 @@ The bot can send messages to a channel where it is admin. Commands are only acce
 ## Notes
 
 - Market and user data are cached in memory to avoid repeated calls.
-- The cache is reset when the script restarts.
+- Seen trades are stored in `.poly_freshies_state.json` to avoid duplicate alerts after restart.
