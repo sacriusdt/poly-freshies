@@ -278,21 +278,22 @@ def format_notification(trade: Dict[str, Any], event_count: int, user_count: int
     title = escape_md(trade.get("title") or "")
     event_slug = trade.get("eventSlug") or ""
     event_link = EVENT_LINK.format(slug=event_slug)
-    title_link = f"[{title}]({event_link})" if title else event_link
+    title_link = f"{title} ({event_link})" if title else event_link
 
-    name = trade.get("name") or "unknown"
+    name = trade.get("name") or trade.get("pseudonym") or trade.get("proxyWallet") or "unknown"
     name_safe = escape_md(name)
     if name_safe != "unknown":
         name_link = USER_LINK.format(name=name_safe)
-        name_text = f"[{name_safe}]({name_link})"
+        name_text = f"{name_safe} ({name_link})"
     else:
         name_text = name_safe
 
     rank = rank_emoji(size)
 
-    line1 = f"{side_emoji} {rank} {outcome} {title_link} [{event_count}]"
-    line2 = f"{price_pct} | `{size_int}` USDC | {traded}th predictions by {name_text} [{user_count}]"
-    return f"{line1}\n{line2}"
+    line1 = f"{side_emoji} {rank} {outcome} {title_link} [`{event_count}`]"
+    line2 = f"`{price_pct}` | `{size_int}` USDC |"
+    line3 = f"{traded}th predictions by {name_text} [`{user_count}`]"
+    return f"{line1}\n\n{line2}\n{line3}"
 
 
 def fetch_trades(session: requests.Session, settings: Settings) -> List[Dict[str, Any]]:

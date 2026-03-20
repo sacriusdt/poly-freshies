@@ -13,8 +13,10 @@ Detect large trades from fresh wallets on Polymarket and flag possible insiders.
 ## Output format
 
 ```
-🟢 🔥 YES [Some Market Title](https://polymarket.com/event/some-event) [3]
-23.50% | `4200` USDC | 4th predictions by [user](https://polymarket.com/@user) [2]
+🟢 🐬 YES Some Market Title (https://polymarket.com/event/some-event) [`3`]
+
+`23.50%` | `4200` USDC |
+4th predictions by user (https://polymarket.com/@user) [`2`]
 ```
 
 - Green is BUY, red is SELL.
