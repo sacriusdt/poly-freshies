@@ -266,6 +266,22 @@ def rank_emoji(size: float) -> str:
     return "🦈"
 
 
+def is_crypto_address(value: str) -> bool:
+    if not value.startswith("0x"):
+        return False
+    hex_part = value[2:]
+    if len(hex_part) < 8:
+        return False
+    return all(ch in "0123456789abcdefABCDEF" for ch in hex_part)
+
+
+def format_display_name(name: str) -> str:
+    if is_crypto_address(name):
+        short = f"0x{name[2:6]}"
+        return f"@{short}"
+    return f"@{name}"
+
+
 def format_notification(trade: Dict[str, Any], event_count: int, user_count: int, traded: int) -> str:
     side = (trade.get("side") or "").upper()
     side_emoji = "🟢" if side == "BUY" else "🔴"
@@ -273,27 +289,29 @@ def format_notification(trade: Dict[str, Any], event_count: int, user_count: int
     price = float(trade.get("price") or 0)
     price_pct = f"{price * 100:.2f}%"
     size_int = int(round(size))
+    size_fmt = f"{size_int:,}"
 
     outcome = escape_md(trade.get("outcome") or "")
     title = escape_md(trade.get("title") or "")
     event_slug = trade.get("eventSlug") or ""
     event_link = EVENT_LINK.format(slug=event_slug)
-    title_link = f"{title} ({event_link})" if title else event_link
+    title_text = f"{outcome} | {title}" if title else outcome
 
     name = trade.get("name") or trade.get("pseudonym") or trade.get("proxyWallet") or "unknown"
     name_safe = escape_md(name)
     if name_safe != "unknown":
         name_link = USER_LINK.format(name=name_safe)
-        name_text = f"{name_safe} ({name_link})"
+        display = format_display_name(name_safe)
+        name_text = f"[{display}]({name_link})"
     else:
-        name_text = name_safe
+        name_text = "@unknown"
 
     rank = rank_emoji(size)
 
-    line1 = f"{side_emoji} {rank} {outcome} {title_link} [`{event_count}`]"
-    line2 = f"`{price_pct}` | `{size_int}` USDC |"
-    line3 = f"{traded}th predictions by {name_text} [`{user_count}`]"
-    return f"{line1}\n\n{line2}\n{line3}"
+    line1 = f"{side_emoji}{rank} {title_text}"
+    line2 = f"[event]({event_link})"
+    line3 = f"`{price_pct}` | `{size_fmt}` USDC | {traded}th predictions by {name_text}"
+    return f"{line1}\n{line2}\n\n{line3}"
 
 
 def fetch_trades(session: requests.Session, settings: Settings) -> List[Dict[str, Any]]:
