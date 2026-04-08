@@ -287,8 +287,9 @@ def format_notification(trade: Dict[str, Any], event_count: int, user_count: int
     side_emoji = "🟢" if side == "BUY" else "🔴"
     size = float(trade.get("size") or 0)
     price = float(trade.get("price") or 0)
+    usdc_size = size * price
     price_pct = f"{price * 100:.2f}%"
-    size_int = int(round(size))
+    size_int = int(round(usdc_size))
     size_fmt = f"{size_int:,}"
 
     outcome = escape_md(trade.get("outcome") or "")
@@ -306,7 +307,7 @@ def format_notification(trade: Dict[str, Any], event_count: int, user_count: int
     else:
         name_text = "@unknown"
 
-    rank = rank_emoji(size)
+    rank = rank_emoji(usdc_size)
 
     line1 = f"{side_emoji}{rank} {title_text}"
     line2 = f"[event]({event_link})"
